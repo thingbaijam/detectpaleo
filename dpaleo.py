@@ -41,7 +41,9 @@ import statistics as stat
 import scipy.stats as statdist
 import numpy as np
 
-#------------------------------------------------------------------------------------------------------
+
+#  Probability of surface rupture -----------------------------------------------------
+
 def prob_detectsurfrup(magnitude=-1, model="UCERf3", doplot = False):
     # from Appendix I UCERF3 model - WC1994 based model
     mags = []
@@ -49,7 +51,7 @@ def prob_detectsurfrup(magnitude=-1, model="UCERf3", doplot = False):
     
     if model == "UCERF3":
        # from Appendix I UCERF3 model - WC1994 based model
-       myfile = "files/UCERF3_mag_surfslipprob.csv"
+       myfile = "UCERF3_SurfaceRuptureProbability.csv"
     else:
       myfile = model
     
@@ -79,7 +81,8 @@ def prob_detectsurfrup(magnitude=-1, model="UCERf3", doplot = False):
 def plot_prob_detectsurfrup(model="UCERF3"):
    prob_detectsurfrup(model=model, doplot = True)
 
-#-------------------------------------------------------------------------------------------
+
+#- Average surface slip -------------------------------------------------------------
 
 def mag2avg_surfslip(magnitude=-1, model="UCERF3"):
     if model=="UCERF3":
@@ -90,9 +93,17 @@ def mag2avg_surfslip(magnitude=-1, model="UCERF3"):
           avg_surfslip = 0.007
     elif model=="TMG2017":
        # a link to eqsrcpy package .. perhaps, not now
-       pass
+       print("TMG2017 is not currently implemented")
+       avg_surfslip = -1
     elif model=="NZNSHM22":
-       # 
+       rupturearea = 10**(M-4.2)  # simplied source scaling - Stirling et al. 
+       
+       # Author note: the following codes actually beongs to eqsrcpy
+       # log10(Mo)= 1.5*Mw +9.05 (Hanks and Kanamori, 1979)
+       # Mo = \Mu*A*D (Aki, 1966) 
+       # Mu = 3.0*10**10   (I would prefer 3.3 *10^10  Nm^-2)
+    
+       
        pass
     return avg_surfslip
 
@@ -111,11 +122,7 @@ def plot_mag2avg_surfslip(model="UCERF3"):
     # fig = plt.gcf()
     # fig.set_size_inches(7, 4)
 
-#-------------------------------------------------------------------------------------------
-
-# (3) normslip_prof(avg_surfslip, x_by_RL= np.linspace(0.05, 0.5,50), model='sinesqrt')
-#   default x_by_RL = np.linspace(0.05, 0.5,50)
-#       sinesqrt(x)* avgslip 
+# Slip profile ---------------------------------------------------------------
 
 def slip_profile(avg_surfslip, x_by_RL=np.linspace(0.05, 0.5,50), model='sinesqrt'):
     # As of now- we do not have any model other than sinesqrt
@@ -169,7 +176,8 @@ def plot_prob_detect_paleoslip(model="wrightwood2013"):
     plt.xlabel('Paleo-slip (m)');
     plt.ylabel('Detection probability');
 
-#-------------------------------------------------------------------------------------------
+
+# Slip PDF at a point of the fault -------------------------------------------------------------------------
 
 def prob_slip_profpoint (slip_x, normx=None, model = "UCERF3"):
     # normx is location (normalized such that RL = 1, where RL is rupture length) 

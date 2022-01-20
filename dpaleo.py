@@ -3,35 +3,7 @@
 # See: Weldon RJ, Biasi GP. Appendix I: Probability of detection of ground rupture at paleoseismic sites. 
 # US Geol. Surv. Open‐File Rept. 2013‐1165‐I, and California Geol. Surv. Special Rept. 228‐I. 2013.
 # ------------------------------------------------------------------------------------
-# Units used here are: slip metres, magntude Mw 
-#
-# Key functions:
-#
-# prob_detectsurfrup(magnitude=-1, model="UCERf3", doplot = False)
-# Also, plot_prob_detectsurfrup(model="UCERF3")
-# Model can be also a name of a file (along with it's relative or absolute location). 
-# File contains list of comma separated values: magnitude, probabilty
-
-# 
-# (2) mag2avg_surfslip(mag, model='UCERF3', doplot = False)
-#      note: model = NZNSHM2022 or TMG2017  ... 
-# This could in be two step => mag2area, 
-# area2avgslip assuming that averagelsip and # average surface slip concides reasonably, 
-# espcailly for strikeslip events 
-#     
-# (3) normslip_prof(avg_surfslip, x_by_RL= np.linspace(0.05, 0.5,50), model='sinesqrt')
-#   default x_by_RL = np.linspace(0.05, 0.5,50)
-#       sinesqrt(x)* avgslip 
-#  
-# (4) prob_slip_profpoint (avg_surfslip, model = 'UCERF3')
-#    = lognormal 
-#    == I prefer extrme value distribution
-#   
-# (5) prob_detectpaleoslip(sampledslip, prob_sampledslip = 1, model='wrightwood2013')
-
-# What do you need?
-# (1) mag_surfslipprob.csv
-
+# thingbaijam@gmail.com, January 2022 
 
 import numpy as np
 import csv
@@ -40,7 +12,7 @@ import matplotlib.pyplot as plt
 import statistics as stat
 import scipy.stats as statdist
 import numpy as np
-
+from scipy.stats import genextreme as gev
 
 #  Probability of surface rupture -----------------------------------------------------
 
@@ -96,15 +68,12 @@ def mag2avg_surfslip(magnitude=-1, model="UCERF3"):
        print("TMG2017 is not currently implemented")
        avg_surfslip = -1
     elif model=="NZNSHM22":
-       rupturearea = 10**(M-4.2)  # simplied source scaling - Stirling et al. 
+       # myu fixed here. we avoid refering to eqsrcpy 
+       rupturearea = 10**(magnitude-4.2)*1000*1000  # simplied source scaling - Stirling et al. 
+       seismicmoment = 10**(1.5*magnitude+9.05) # Hanks and Kanamori(1979)
+       myu = 3.0*10**10  #  I'd prefer 3.3 *10^10  Nm^-2
+       avg_surfslip = seismicmoment/(rupturearea*myu) #Aki (1966)
        
-       # Author note: the following codes actually beongs to eqsrcpy
-       # log10(Mo)= 1.5*Mw +9.05 (Hanks and Kanamori, 1979)
-       # Mo = \Mu*A*D (Aki, 1966) 
-       # Mu = 3.0*10**10   (I would prefer 3.3 *10^10  Nm^-2)
-    
-       
-       pass
     return avg_surfslip
 
 
@@ -113,7 +82,7 @@ def plot_mag2avg_surfslip(model="UCERF3"):
 
     avg_surfslip = []
     for m in mags:
-       avg_surfslip.append(mag2avg_surfslip(m))
+       avg_surfslip.append(mag2avg_surfslip(m, model=model))
 
     plt.plot(mags, avg_surfslip, 'o')
     plt.xlabel('Magnitude (Mw)');
@@ -179,7 +148,7 @@ def plot_prob_detect_paleoslip(model="wrightwood2013"):
 
 # Slip PDF at a point of the fault -------------------------------------------------------------------------
 
-def prob_slip_profpoint (slip_x, normx=None, model = "UCERF3"):
+def prob_slip_profpoint (slip_x, xi=-1, model = "UCERF3", normalized = False):
     # normx is location (normalized such that RL = 1, where RL is rupture length) 
     # along the rupture profile. 
     
@@ -192,18 +161,38 @@ def prob_slip_profpoint (slip_x, normx=None, model = "UCERF3"):
         
         mu = 0.9  # mean is given by log(m) where m is scale parameter
         sigma = 0.5      
-        nsampling = 100  # idealy 10,000
-        dist=statdist.lognorm(s= sigma,scale=mu);
-        maxslp = 4   # again a rough estimate
-        sampledslip = np.linspace(0.001,maxslp,nsampling) 
+        dist=statdist.lognorm(s= sigma,scale=mu)
+        sampledslip = np.linspace(0.001,5,100)  # idealy 10000
         sprob = dist.pdf(sampledslip)
         #dx = (maxslp-0.001)/nsampling .. not doing this
-        slipprob = sprob/sum(sprob) # normalized so that summation of probabilies = 1
-     
+        if normalized:
+            slipprob = sprob/sum(sprob) # normalized so that summation of probabilies = 1
+        else:
+            slipprob = sprob
+    elif model=="GEV":
+        # generalized extreme value distribution
+        pshape, plocation, pscale = surfslipdist_gev(xi)
+        sampledslip = np.linspace(0.0,5,100) # 10000?
+        sprob = gev.pdf(sampledslip, pshape, loc=plocation, scale=pscale)
+        if normalized:
+            slipprob = sprob/sum(sprob) # normalized so that summation of probabilies = 1
+        else:
+            slipprob = sprob
     sampledslip = sampledslip*slip_x
     return sampledslip, slipprob
 
 
+def surfslipdist_gev(fRL):
+    # check 
+    if (fRL <0) | (fRL >1):
+        print("**** input normalized locationnot appropiate!")
+        return (None, None, None)
+    if fRL> 0.5:
+        fRL = 1.0-fRL
+    pshape = 0.415-np.exp(-3.897*fRL)
+    plocation = 1.632*(fRL**0.586)
+    pscale = 0.845*(fRL**0.305)
+    return(pshape, plocation, pscale)
 
 
 

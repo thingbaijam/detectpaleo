@@ -41,7 +41,8 @@ See the Jupyter notebooks
 - plot_sinesqrt()
 
 ##### Detectability of Paleo-Slip 
-- prob_detectpaleoslip(sampledslip, prob_sampledslip = 1, model="wrightwood2013")
+- prob_detectpaleoslip(sampledslip, prob_sampledslip = 1, model="wrightwood2013", slipfactor=1)
+    - slipfactor (typically, <=1.0) is to enable modulations on detectability of slip  
     - returns probability
 - plot_prob_detect_paleoslip(model="wrightwood2013")
 

@@ -117,17 +117,18 @@ def plot_sinesqrt():
 
 #-------------------------------------------------------------------------------------------
 
-def prob_detectpaleoslip(sampledslip, prob_sampledslip = 1, model="wrightwood2013"):
+def prob_detectpaleoslip(sampledslip, prob_sampledslip = 1, model="wrightwood2013", slipfactor = 1):
     #  As of now, we have no other model except - The Wrightwood model
     #  Table from UCERF Appendix I
+    #  slipfactor (typically, < = 1.0) is to allow modulations on detectability on slip. 
     
     slips = [0, 0.10, 0.20, 0.30, 1.00, 2.00, 4.00]
     prob_detect = [0, 0.05, 0.25, 0.50, 0.75, 0.95, 0.99]
-
+    
     # This fits an exponential model
     # prob = 1-np.exp(-1.6*slip)
     # But UCERF3 uses 1-D interpolation.
- 
+    slips = slips*slipfactor
     prob = np.interp(sampledslip, slips, prob_detect)
     
     if (prob<0.0) | (prob>1.0):

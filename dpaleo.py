@@ -42,7 +42,7 @@ def prob_detectsurfrup(magnitude=-1, model="UCERf3", doplot = False):
           p = np.interp(magnitude, mags, probs)
            
     if doplot is True:
-        plt.plot(mags, probs, 'o')
+        plt.plot(mags, probs, '-')
         plt.xlabel("Magnitude (Mw)");
         plt.ylabel("Probability of surface rupture, Psr");
         p = None

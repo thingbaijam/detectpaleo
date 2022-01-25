@@ -67,9 +67,21 @@ def mag2avg_surfslip(magnitude=-1, model="UCERF3"):
        # a link to eqsrcpy package .. perhaps, not now
        print("TMG2017 is not currently implemented")
        avg_surfslip = -1
-    elif model=="NZNSHM22":
+    elif model=="NZNSHM22_mean":
        # myu fixed here. we avoid refering to eqsrcpy 
        rupturearea = 10**(magnitude-4.2)*1000*1000  # simplied source scaling - Stirling et al. 
+       seismicmoment = 10**(1.5*magnitude+9.05) # Hanks and Kanamori(1979)
+       myu = 3.0*10**10  #  I'd prefer 3.3 *10^10  Nm^-2
+       avg_surfslip = seismicmoment/(rupturearea*myu) #Aki (1966)
+    elif model=="NZNSHM22_lower":
+       # myu fixed here. we avoid refering to eqsrcpy 
+       rupturearea = 10**(magnitude-4.1)*1000*1000  # simplied source scaling - Stirling et al. 
+       seismicmoment = 10**(1.5*magnitude+9.05) # Hanks and Kanamori(1979)
+       myu = 3.0*10**10  #  I'd prefer 3.3 *10^10  Nm^-2
+       avg_surfslip = seismicmoment/(rupturearea*myu) #Aki (1966)
+    elif model=="NZNSHM22_upper":
+       # myu fixed here. we avoid refering to eqsrcpy 
+       rupturearea = 10**(magnitude-4.3)*1000*1000  # simplied source scaling - Stirling et al. 
        seismicmoment = 10**(1.5*magnitude+9.05) # Hanks and Kanamori(1979)
        myu = 3.0*10**10  #  I'd prefer 3.3 *10^10  Nm^-2
        avg_surfslip = seismicmoment/(rupturearea*myu) #Aki (1966)
@@ -120,7 +132,7 @@ def plot_sinesqrt():
 def prob_detectpaleoslip(sampledslip, prob_sampledslip = 1, model="wrightwood2013", slipfactor = 1):
     #  As of now, we have no other model except - The Wrightwood model
     #  Table from UCERF Appendix I
-    #  slipfactor (typically, < = 1.0) is to allow modulations on detectability on slip. 
+    #  slipfactor (typically, >= 1.0) is to allow modulations on detectability on slip. 
     
     slips = [0, 0.10, 0.20, 0.30, 1.00, 2.00, 4.00]
     prob_detect = [0, 0.05, 0.25, 0.50, 0.75, 0.95, 0.99]
@@ -128,7 +140,10 @@ def prob_detectpaleoslip(sampledslip, prob_sampledslip = 1, model="wrightwood201
     # This fits an exponential model
     # prob = 1-np.exp(-1.6*slip)
     # But UCERF3 uses 1-D interpolation.
-    slips = slips*slipfactor
+   
+    # slips = np.array(slips)*slipfactor
+    slips = [x * slipfactor for x in slips]
+
     prob = np.interp(sampledslip, slips, prob_detect)
     
     if (prob<0.0) | (prob>1.0):
@@ -137,11 +152,12 @@ def prob_detectpaleoslip(sampledslip, prob_sampledslip = 1, model="wrightwood201
         prob = prob*prob_sampledslip
     return prob
 
-def plot_prob_detect_paleoslip(model="wrightwood2013"):
+def plot_prob_detect_paleoslip(model="wrightwood2013", slipfactor = 1):
     slips = [0, 0.10, 0.20, 0.30, 1.00, 2.00, 4.00]
+    slips = [x*slipfactor for x in slips]
     y = []
     for s in slips:
-        y.append(prob_detectpaleoslip(s))
+        y.append(prob_detectpaleoslip(s, model=model, slipfactor = slipfactor))
     plt.plot(slips, y, 'o-')
     plt.xlabel('Paleo-slip (m)');
     plt.ylabel('Detection probability');
